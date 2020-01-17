@@ -6,13 +6,14 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/metaleap/go-util/str"
+	ustr "github.com/metaleap/go-util/str"
 
 	xsdt "github.com/metaleap/go-xsd/types"
 )
 
 const (
-	idPrefix = "XsdGoPkg"
+	// 去掉统一的前缀 XsdGoPkg
+	idPrefix = ""
 )
 
 func (me *All) makePkg(bag *PkgBag) {
@@ -53,7 +54,7 @@ func (me *Attribute) makePkg(bag *PkgBag) {
 	me.hasElemsSimpleType.makePkg(bag)
 	if len(me.Ref) > 0 {
 		key = bag.resolveQnameRef(me.Ref.String(), "", &impName)
-		tmp = ustr.PrefixWithSep(impName, ".", idPrefix+"HasAttr_"+bag.safeName(me.Ref.String()[(strings.Index(me.Ref.String(), ":")+1):]))
+		tmp = ustr.PrefixWithSep(impName, ".", idPrefix+"Attr_"+bag.safeName(me.Ref.String()[(strings.Index(me.Ref.String(), ":")+1):]))
 		if bag.attRefImps[me], bag.attsKeys[me] = impName, key; len(bag.attsCache[key]) == 0 {
 			bag.attsCache[key] = tmp
 		}
@@ -70,13 +71,14 @@ func (me *Attribute) makePkg(bag *PkgBag) {
 		if defVal = me.Default; len(defVal) == 0 {
 			defName, defVal = "Fixed", me.Fixed
 		}
-		if me.Parent() == bag.Schema {
-			key = safeName
-		} else {
-			key = safeName + "_" + bag.safeName(typeName) + "_" + bag.safeName(defVal)
-		}
+		// if me.Parent() == bag.Schema {
+		// 	key = safeName
+		// } else {
+		// 	key = safeName + "_" + bag.safeName(typeName) + "_" + bag.safeName(defVal)
+		// }
+		key = safeName
 		if len(bag.attsCache[key]) == 0 {
-			tmp = idPrefix + "HasAttr_" + key
+			tmp = idPrefix + "Attr_" + key
 			bag.attsKeys[me] = key
 			bag.attsCache[key] = tmp
 			var td = bag.addType(me, tmp, "", me.Annotation)
@@ -109,12 +111,12 @@ func (me *AttributeGroup) makePkg(bag *PkgBag) {
 	if len(me.Ref) > 0 {
 		if len(bag.attGroups[me]) == 0 {
 			refName = bag.resolveQnameRef(me.Ref.String(), "", &refImp)
-			bag.attGroups[me] = idPrefix + "HasAtts_" + refName
+			bag.attGroups[me] = idPrefix + "Atts_" + refName
 			bag.attGroupRefImps[me] = refImp
 		}
 	} else {
 		safeName := bag.safeName(me.Name.String())
-		tmp := idPrefix + "HasAtts_" + safeName
+		tmp := idPrefix + "Atts_" + safeName
 		var td = bag.addType(me, tmp, "", me.Annotation)
 		bag.attGroups[me] = tmp
 		for _, ag := range me.AttributeGroups {
@@ -122,9 +124,9 @@ func (me *AttributeGroup) makePkg(bag *PkgBag) {
 				ag.Ref.Set(ag.Name.String())
 			}
 			if refName = bag.resolveQnameRef(ag.Ref.String(), "", &refImp); len(refImp) > 0 {
-				td.addEmbed(ag, refImp+"."+idPrefix+"HasAtts_"+refName[(len(refImp)+1):], ag.Annotation)
+				td.addEmbed(ag, refImp+"."+idPrefix+"Atts_"+refName[(len(refImp)+1):], ag.Annotation)
 			} else {
-				td.addEmbed(ag, idPrefix+"HasAtts_"+refName, ag.Annotation)
+				td.addEmbed(ag, idPrefix+"Atts_"+refName, ag.Annotation)
 			}
 		}
 		for _, att := range me.Attributes {
@@ -283,7 +285,7 @@ func (me *ComplexType) makePkg(bag *PkgBag) {
 	}
 	if ctBaseType = bag.resolveQnameRef(ctBaseType, "T", nil); len(ctBaseType) > 0 {
 		if strings.HasPrefix(ctBaseType, "xsdt.") {
-			td.addEmbed(nil, idPrefix+"HasCdata")
+			td.addEmbed(nil, idPrefix+"Cdata")
 		} else {
 			td.addEmbed(nil, bag.safeName(ctBaseType))
 		}
@@ -308,7 +310,7 @@ func (me *ComplexType) makePkg(bag *PkgBag) {
 			println("NOTFOUND: " + ctValueType)
 		}
 	} else if mixed {
-		td.addEmbed(nil, idPrefix+"HasCdata")
+		td.addEmbed(nil, idPrefix+"Cdata")
 	}
 	for elGr = range allElemGroups {
 		subMakeElemGroup(bag, td, elGr, grsDone, anns(nil, me.ComplexContent)...)
@@ -371,7 +373,7 @@ func (me *Element) makePkg(bag *PkgBag) {
 	me.hasElemComplexType.makePkg(bag)
 	if len(me.Ref) > 0 {
 		key = bag.resolveQnameRef(me.Ref.String(), "", &impName)
-		for pref, cache := range map[string]map[string]string{"HasElem_": bag.elemsCacheOnce, "HasElems_": bag.elemsCacheMult} {
+		for pref, cache := range map[string]map[string]string{"Elem_": bag.elemsCacheOnce, "Elems_": bag.elemsCacheMult} {
 			tmp = ustr.PrefixWithSep(impName, ".", idPrefix+pref+bag.safeName(me.Ref.String()[(strings.Index(me.Ref.String(), ":")+1):]))
 			if bag.elemRefImps[me], bag.elemKeys[me] = impName, key; len(cache[key]) == 0 {
 				cache[key] = tmp
@@ -397,11 +399,12 @@ func (me *Element) makePkg(bag *PkgBag) {
 		if defVal = me.Default; len(defVal) == 0 {
 			defName, defVal = "Fixed", me.Fixed
 		}
-		if me.Parent() == bag.Schema {
-			key = safeName
-		} else {
-			key = bag.safeName(bag.Stacks.FullName()) + "_" + safeName + "_" + bag.safeName(typeName) + "_" + bag.safeName(defVal)
-		}
+		// if me.Parent() == bag.Schema {
+		// 	key = safeName
+		// } else {
+		// 	key = bag.safeName(bag.Stacks.FullName()) + "_" + safeName + "_" + bag.safeName(typeName) + "_" + bag.safeName(defVal)
+		// }
+		key = safeName
 		if valueType = bag.simpleContentValueTypes[typeName]; len(valueType) == 0 {
 			valueType = typeName
 		}
@@ -409,12 +412,12 @@ func (me *Element) makePkg(bag *PkgBag) {
 		if _, isChoice := me.Parent().(*Choice); isChoice && isPt {
 			asterisk = "*"
 		}
-		for pref, cache := range map[string]map[string]string{"HasElem_": bag.elemsCacheOnce, "HasElems_": bag.elemsCacheMult} {
+		for pref, cache := range map[string]map[string]string{"Elem_": bag.elemsCacheOnce, "Elems_": bag.elemsCacheMult} {
 			if tmp = idPrefix + pref + key; !bag.elemsWritten[tmp] {
 				bag.elemsWritten[tmp], bag.elemKeys[me] = true, key
 				cache[key] = tmp
 				var td = bag.addType(me, tmp, "", me.Annotation)
-				td.addField(me, ustr.Ifs(pref == "HasElems_", pluralize(safeName), safeName), ustr.Ifs(pref == "HasElems_", "[]"+asterisk+typeName, asterisk+typeName), ustr.Ifs(len(bag.Schema.TargetNamespace) > 0, bag.Schema.TargetNamespace.String()+" ", "")+me.Name.String(), me.Annotation)
+				td.addField(me, ustr.Ifs(pref == "Elems_", pluralize(safeName), safeName), ustr.Ifs(pref == "Elems_", "[]"+asterisk+typeName, asterisk+typeName), ustr.Ifs(len(bag.Schema.TargetNamespace) > 0, bag.Schema.TargetNamespace.String()+" ", "")+me.Name.String(), me.Annotation)
 				if me.parent == bag.Schema {
 					loadedSchemas := make(map[string]bool)
 					for _, subEl = range bag.Schema.RootSchema([]string{bag.Schema.loadUri}).globalSubstitutionElems(me, loadedSchemas) {
@@ -478,13 +481,13 @@ func (me *Group) makePkg(bag *PkgBag) {
 	if len(me.Ref) > 0 {
 		if len(bag.elemGroups[me]) == 0 {
 			refName = bag.resolveQnameRef(me.Ref.String(), "", &refImp)
-			bag.elemGroups[me] = idPrefix + "HasGroup_" + refName
+			bag.elemGroups[me] = idPrefix + "Group_" + refName
 			bag.elemGroupRefImps[me] = refImp
 		}
 	} else {
 		me.Ref.Set(me.Name.String())
 		safeName := bag.safeName(me.Name.String())
-		tmp := idPrefix + "HasGroup_" + safeName
+		tmp := idPrefix + "Group_" + safeName
 		bag.elemGroups[me] = tmp
 		var td = bag.addType(me, tmp, "", me.Annotation)
 		choices, seqs = Flattened(choices, seqs)
@@ -875,10 +878,10 @@ func subMakeElemGroup(bag *PkgBag, td *declType, gr *Group, done map[string]bool
 	if refName := bag.resolveQnameRef(gr.Ref.String(), "", &refImp); !done[refName] {
 		if done[refName] = true; len(refImp) > 0 {
 			if !strings.HasPrefix(refName, bag.impName+"."+idPrefix) {
-				td.addEmbed(gr, refImp+"."+idPrefix+"HasGroup_"+refName[(len(refImp)+1):], anns...)
+				td.addEmbed(gr, refImp+"."+idPrefix+"Group_"+refName[(len(refImp)+1):], anns...)
 			}
 		} else {
-			td.addEmbed(gr, idPrefix+"HasGroup_"+refName, anns...)
+			td.addEmbed(gr, idPrefix+"Group_"+refName, anns...)
 		}
 	}
 }
