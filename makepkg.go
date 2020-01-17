@@ -5,9 +5,9 @@ import (
 	"path"
 	"strings"
 
-	udevgo "github.com/metaleap/go-util/dev/go"
-	uslice "github.com/metaleap/go-util/slice"
-	ustr "github.com/metaleap/go-util/str"
+	"github.com/metaleap/go-util/dev/go"
+	"github.com/metaleap/go-util/slice"
+	"github.com/metaleap/go-util/str"
 
 	xsdt "github.com/metaleap/go-xsd/types"
 )
@@ -125,7 +125,7 @@ func newPkgBag(schema *Schema) (bag *PkgBag) {
 	for _, pt := range []string{"Boolean", "Byte", "Double", "Float", "Int", "Integer", "Long", "NegativeInteger", "NonNegativeInteger", "NonPositiveInteger", "PositiveInteger", "Short", "UnsignedByte", "UnsignedInt", "UnsignedLong", "UnsignedShort"} {
 		bag.parseTypes[bag.impName+"."+pt] = true
 	}
-	bag.addType(nil, idPrefix+"Cdata", "").addField(nil, idPrefix+"CDATA", "string", ",chardata")
+	bag.addType(nil, idPrefix+"HasCdata", "").addField(nil, idPrefix+"CDATA", "string", ",chardata")
 	return
 }
 
@@ -213,10 +213,10 @@ func (me *PkgBag) assembleSource() string {
 	//	Your custom error-handling function, if required.
 	WalkOnError         func(error)
 	%s
-	WalkHandlers        = &%sWalkHandler {}
+	WalkHandlers        = &%sWalkHandlers {}
 )`, doc, idPrefix)
 		me.appendFmt(false, doc)
-		me.appendFmt(false, "type %vWalkHandler struct {", idPrefix)
+		me.appendFmt(false, "type %vWalkHandlers struct {", idPrefix)
 		for wt := range me.walkerTypes {
 			me.appendFmt(false, "\t%s func (*%s, bool) (error)", wt, wt)
 		}
