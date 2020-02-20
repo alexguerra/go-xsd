@@ -5,9 +5,9 @@ import (
 	"path"
 	"strings"
 
-	"github.com/metaleap/go-util/dev/go"
-	"github.com/metaleap/go-util/slice"
-	"github.com/metaleap/go-util/str"
+	udevgo "github.com/metaleap/go-util/dev/go"
+	uslice "github.com/metaleap/go-util/slice"
+	ustr "github.com/metaleap/go-util/str"
 
 	xsdt "github.com/metaleap/go-xsd/types"
 )
@@ -18,7 +18,7 @@ var (
 		BasePath:                 "github.com/metaleap/go-xsd-pkg",
 		ForceParseForDefaults:    false,
 		PluralizeSpecialPrefixes: []string{"Library", "Instance"},
-		AddWalkers:               true,
+		AddWalkers:               false,
 	}
 	typeRenderRepls = map[string]string{"*": "", "[": "", "]": "", "(list ": "", ")": ""}
 )
@@ -199,6 +199,14 @@ func (me *PkgBag) assembleSource() string {
 	}
 
 	for _, dt := range me.declTypes {
+		// 去掉内嵌类型
+		if dt.Name != "" &&
+			(strings.Contains(dt.Name, "HasElem_") ||
+				strings.Contains(dt.Name, "HasElems_") ||
+				strings.Contains(dt.Name, "HasAttr_") ||
+				strings.Contains(dt.Name, "HasAtts_")) {
+			continue
+		}
 		dt.render(me)
 	}
 

@@ -338,7 +338,8 @@ func (me *ComplexType) makePkg(bag *PkgBag) {
 
 	for att = range allAtts {
 		if key := bag.attsKeys[att]; len(key) > 0 {
-			td.addEmbed(att, ustr.PrefixWithSep(bag.attRefImps[att], ".", bag.attsCache[key][(strings.Index(bag.attsCache[key], ".")+1):]), att.Annotation)
+			pickEmbedFields(bag, td, ustr.PrefixWithSep(bag.attRefImps[att], ".", bag.attsCache[key][(strings.Index(bag.attsCache[key], ".")+1):]))
+			// td.addEmbed(att, ustr.PrefixWithSep(bag.attRefImps[att], ".", bag.attsCache[key][(strings.Index(bag.attsCache[key], ".")+1):]), att.Annotation)
 		}
 	}
 	me.elemBase.afterMakePkg(bag)
@@ -864,7 +865,8 @@ func subMakeElem(bag *PkgBag, td *declType, el *Element, done map[string]bool, p
 	anns = append(anns, el.Annotation)
 	if refName := bag.elemKeys[el]; (len(refName) > 0) && (!done[refName]) {
 		if done[refName], elCache = true, ustr.Ifm((parentMaxOccurs == 1) && (el.hasAttrMaxOccurs.Value() == 1), bag.elemsCacheOnce, bag.elemsCacheMult); !strings.HasPrefix(elCache[refName], bag.impName+"."+idPrefix) {
-			td.addEmbed(el, elCache[refName], anns...)
+			pickEmbedFields(bag, td, elCache[refName])
+			// td.addEmbed(el, elCache[refName], anns...)
 		}
 	}
 }
@@ -881,4 +883,14 @@ func subMakeElemGroup(bag *PkgBag, td *declType, gr *Group, done map[string]bool
 			td.addEmbed(gr, idPrefix+"HasGroup_"+refName, anns...)
 		}
 	}
+}
+
+// 提取内嵌类型的字段放到外层结构中
+func pickEmbedFields(bag *PkgBag, td *declType, sn string) {
+	if dt, ok := bag.declTypes[sn]; ok && len(dt.Fields) > 0 {
+		for n, f := range dt.Fields {
+			td.Fields[n] = f
+		}
+	}
+	// delete(bag.declTypes, sn)
 }
