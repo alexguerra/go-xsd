@@ -338,6 +338,7 @@ func (me *declEmbed) render(bag *PkgBag, dt *declType) {
 
 type declField struct {
 	Name, Type, XmlTag string
+	BsonTag, JsonTag   string
 	Annotations        []*Annotation
 	elem               element
 	finalTypeName      string
@@ -350,7 +351,14 @@ func (me *declField) render(bag *PkgBag, dt *declType) {
 		}
 	}
 	me.finalTypeName = bag.rewriteTypeSpec(me.Type)
-	bag.appendFmt(true, "\t%s %s `xml:\"%s\"`", me.Name, me.finalTypeName, me.XmlTag)
+	tag := []string{fmt.Sprintf("xml:\"%s\"", me.XmlTag)}
+	if len(me.JsonTag) > 0 {
+		tag = append(tag, fmt.Sprintf("json:\"%s\"", me.JsonTag))
+	}
+	if len(me.BsonTag) > 0 {
+		tag = append(tag, fmt.Sprintf("bson:\"%s\"", me.BsonTag))
+	}
+	bag.appendFmt(true, "\t%s %s `%s`", me.Name, me.finalTypeName, strings.Join(tag, " "))
 }
 
 type declMethod struct {
@@ -387,6 +395,30 @@ func (me *declType) addAnnotations(a ...*Annotation) {
 
 func (me *declType) addField(elem element, n, t, x string, a ...*Annotation) (f *declField) {
 	f = &declField{elem: elem, Name: n, Type: t, XmlTag: x, Annotations: a}
+	// 添加JsonTag, BsonTag
+	switch e := elem.(type) {
+	case *Element:
+		if e.MinOccurs == 0 {
+			tag := fmt.Sprintf("%s,omitempty", e.Name)
+			f.JsonTag = tag
+			f.BsonTag = tag
+		} else {
+			tag := fmt.Sprintf("%s", e.Name)
+			f.JsonTag = tag
+			f.BsonTag = tag
+		}
+	case *Attribute:
+		if len(e.Default) == 0 {
+			tag := fmt.Sprintf("%s,omitempty", e.Name)
+			f.JsonTag = tag
+			f.BsonTag = tag
+		} else {
+			tag := fmt.Sprintf("%s", e.Name)
+			f.JsonTag = tag
+			f.BsonTag = tag
+		}
+	}
+
 	me.Fields[n] = f
 	return
 }
