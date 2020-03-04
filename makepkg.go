@@ -398,7 +398,10 @@ func (me *declType) addField(elem element, n, t, x string, a ...*Annotation) (f 
 	// 添加JsonTag, BsonTag
 	switch e := elem.(type) {
 	case *Element:
-		if e.MinOccurs == 0 {
+		// 如果parent 是choice节点添加omitempty
+		// TODO 如果祖父是Choice怎么办？
+		p := e.Parent()
+		if _, ok := p.(*Choice); ok {
 			tag := fmt.Sprintf("%s,omitempty", e.Name)
 			f.JsonTag = tag
 			f.BsonTag = tag
@@ -408,7 +411,8 @@ func (me *declType) addField(elem element, n, t, x string, a ...*Annotation) (f 
 			f.BsonTag = tag
 		}
 	case *Attribute:
-		if len(e.Default) == 0 {
+		// use="optional"  && 没有默认值的话加omitempty
+		if e.Use == "optional" && !e.hasDefaultAttr {
 			tag := fmt.Sprintf("%s,omitempty", e.Name)
 			f.JsonTag = tag
 			f.BsonTag = tag

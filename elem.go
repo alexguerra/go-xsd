@@ -11,10 +11,11 @@ type element interface {
 }
 
 type elemBase struct {
-	atts         []beforeAfterMake
-	parent, self element // self is the struct that embeds elemBase, rather than the elemBase pseudo-field
-	xsdName      xsdt.NCName
-	hasNameAttr  bool
+	atts           []beforeAfterMake
+	parent, self   element // self is the struct that embeds elemBase, rather than the elemBase pseudo-field
+	xsdName        xsdt.NCName
+	hasNameAttr    bool
+	hasDefaultAttr bool
 }
 
 func (me *elemBase) afterMakePkg(bag *PkgBag) {
@@ -41,6 +42,11 @@ func (me *elemBase) init(parent, self element, xsdName xsdt.NCName, atts ...befo
 	me.parent, me.self, me.xsdName, me.atts = parent, self, xsdName, atts
 	for _, a := range atts {
 		if _, me.hasNameAttr = a.(*hasAttrName); me.hasNameAttr {
+			break
+		}
+	}
+	for _, a := range atts {
+		if _, me.hasDefaultAttr = a.(*hasAttrDefault); me.hasDefaultAttr {
 			break
 		}
 	}
